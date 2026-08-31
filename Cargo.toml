@@ -14,6 +14,13 @@ argon2 = "0.5"
 rand = "0.8"
 thiserror = "2"
 
+[[bench]]
+name = "salting_bench"
+harness = false
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
 [features]
 default = ["argon2id"]
 argon2id = []
