@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 
 //! Opinionated Argon2id password hashing for Rust.
 //!
@@ -63,10 +64,10 @@ impl Argon2Params {
         }
     }
 
-    fn build_argon2(&self) -> Argon2<'_> {
+    fn build_argon2(&self) -> Result<Argon2<'_>, PasswordError> {
         let params = Params::new(self.memory_kib, self.iterations, self.parallelism, Some(self.output_len))
-            .expect("valid Argon2 parameters");
-        Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
+            .map_err(|_| PasswordError::HashFailed)?;
+        Ok(Argon2::new(Algorithm::Argon2id, Version::V0x13, params))
     }
 }
 
@@ -82,7 +83,7 @@ pub fn hash_password(password: &str) -> Result<String, PasswordError> {
 /// Returns the password hash in PHC string format.
 pub fn hash_password_with_params(password: &str, params: &Argon2Params) -> Result<String, PasswordError> {
     let salt = SaltString::generate(&mut OsRng);
-    let argon2 = params.build_argon2();
+    let argon2 = params.build_argon2()?;
 
     let hash = argon2
         .hash_password(password.as_bytes(), &salt)
@@ -113,6 +114,43 @@ pub fn verify_password_strict(password: &str, hash: &str) -> Result<(), Password
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed)
         .map_err(|_| PasswordError::VerificationFailed)
+}
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    fn test_params() -> Argon2Params {
+        Argon2Params {
+            memory_kib: 32,
+            iterations: 1,
+            parallelism: 1,
+            output_len: 32,
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn hash_verify_roundtrip(password in "\\PC{1,256}") {
+            let hash = hash_password_with_params(&password, &test_params()).unwrap();
+            prop_assert!(verify_password(&password, &hash).unwrap());
+        }
+
+        #[test]
+        fn hash_differs_each_time(password in "\\PC{1,256}") {
+            let h1 = hash_password_with_params(&password, &test_params()).unwrap();
+            let h2 = hash_password_with_params(&password, &test_params()).unwrap();
+            prop_assert_ne!(h1, h2);
+        }
+
+        #[test]
+        fn verify_wrong_password_fails(password in "\\PC{1,128}", wrong in "\\PC{1,128}") {
+            prop_assume!(password != wrong);
+            let hash = hash_password_with_params(&password, &test_params()).unwrap();
+            prop_assert!(!verify_password(&wrong, &hash).unwrap());
+        }
+    }
 }
 
 #[cfg(test)]
