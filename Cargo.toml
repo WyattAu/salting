@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/WyattAu/salting"
 keywords = ["password", "hashing", "argon2", "argon2id", "security"]
 categories = ["authentication", "cryptography"]
+exclude = ["/target"]
 
 [dependencies]
 argon2 = "0.5"

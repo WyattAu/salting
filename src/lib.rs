@@ -19,7 +19,7 @@ mod error;
 
 pub use error::PasswordError;
 
-use argon2::password_hash::{rand_core::OsRng, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::password_hash::{PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng};
 use argon2::{Algorithm, Argon2, Params, Version};
 
 /// Configurable parameters for Argon2id hashing.
@@ -65,8 +65,13 @@ impl Argon2Params {
     }
 
     fn build_argon2(&self) -> Result<Argon2<'_>, PasswordError> {
-        let params = Params::new(self.memory_kib, self.iterations, self.parallelism, Some(self.output_len))
-            .map_err(|_| PasswordError::HashFailed)?;
+        let params = Params::new(
+            self.memory_kib,
+            self.iterations,
+            self.parallelism,
+            Some(self.output_len),
+        )
+        .map_err(|_| PasswordError::HashFailed)?;
         Ok(Argon2::new(Algorithm::Argon2id, Version::V0x13, params))
     }
 }
@@ -81,7 +86,10 @@ pub fn hash_password(password: &str) -> Result<String, PasswordError> {
 /// Hash a password using the provided parameters.
 ///
 /// Returns the password hash in PHC string format.
-pub fn hash_password_with_params(password: &str, params: &Argon2Params) -> Result<String, PasswordError> {
+pub fn hash_password_with_params(
+    password: &str,
+    params: &Argon2Params,
+) -> Result<String, PasswordError> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = params.build_argon2()?;
 
