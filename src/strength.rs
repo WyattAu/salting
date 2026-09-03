@@ -204,9 +204,7 @@ pub fn strength(password: &str, user_inputs: &[&str]) -> Strength {
         }
         Err(_) => Strength {
             score: 0,
-            feedback: vec![
-                "password could not be analyzed and is treated as weak".to_string(),
-            ],
+            feedback: vec!["password could not be analyzed and is treated as weak".to_string()],
         },
     }
 }
@@ -247,10 +245,19 @@ mod tests {
             policy.check("ab!"),
             Err(PolicyError::TooShort { min: 12, got: 3 })
         );
-        assert_eq!(policy.check("bcdefghij123!"), Err(PolicyError::MissingUppercase));
-        assert_eq!(policy.check("BCDEFGHIJ123!"), Err(PolicyError::MissingLowercase));
+        assert_eq!(
+            policy.check("bcdefghij123!"),
+            Err(PolicyError::MissingUppercase)
+        );
+        assert_eq!(
+            policy.check("BCDEFGHIJ123!"),
+            Err(PolicyError::MissingLowercase)
+        );
         assert_eq!(policy.check("Bcdefghijab!"), Err(PolicyError::MissingDigit));
-        assert_eq!(policy.check("Bcdefghij123"), Err(PolicyError::MissingSpecialChar));
+        assert_eq!(
+            policy.check("Bcdefghij123"),
+            Err(PolicyError::MissingSpecialChar)
+        );
     }
 
     #[test]

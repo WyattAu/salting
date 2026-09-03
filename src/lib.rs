@@ -40,7 +40,7 @@ pub mod strength;
 pub use error::PasswordError;
 
 #[cfg(feature = "strength")]
-pub use strength::{check_password, strength, Policy, PolicyError, Strength};
+pub use strength::{Policy, PolicyError, Strength, check_password, strength};
 
 use argon2::password_hash::{PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng};
 use argon2::{Algorithm, Argon2, Params, Version};
