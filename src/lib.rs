@@ -14,10 +14,33 @@
 //! let hash = hash_password("my secret password").unwrap();
 //! assert!(verify_password("my secret password", &hash).unwrap());
 //! ```
+//!
+//! # Password strength (feature flag)
+//!
+//! With the optional `strength` feature, the crate also provides
+//! deterministic [`Policy`] checks and zxcvbn-based [`strength`]
+//! estimation via [`check_password`]:
+//!
+//! ```rust
+//! # #[cfg(feature = "strength")]
+//! # fn main() {
+//! use salting::{check_password, Policy};
+//!
+//! let result = check_password("Str0ng!Pass#12", &Policy::default(), &[]);
+//! assert!(result.is_ok());
+//! # }
+//! # #[cfg(not(feature = "strength"))] fn main() {}
+//! ```
 
 mod error;
 
+#[cfg(feature = "strength")]
+pub mod strength;
+
 pub use error::PasswordError;
+
+#[cfg(feature = "strength")]
+pub use strength::{check_password, strength, Policy, PolicyError, Strength};
 
 use argon2::password_hash::{PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng};
 use argon2::{Algorithm, Argon2, Params, Version};

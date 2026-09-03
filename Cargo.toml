@@ -1,6 +1,6 @@
 [package]
 name = "salting"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Opinionated Argon2id password hashing for Rust — OWASP-recommended defaults, configurable parameters, and PHC string format"
@@ -14,6 +14,7 @@ exclude = ["/target"]
 argon2 = "0.5"
 rand = "0.8"
 thiserror = "2"
+zxcvbn = { version = "2", optional = true }
 
 [[bench]]
 name = "salting_bench"
@@ -26,3 +27,4 @@ proptest = "1"
 [features]
 default = ["argon2id"]
 argon2id = []
+strength = ["dep:zxcvbn"]
