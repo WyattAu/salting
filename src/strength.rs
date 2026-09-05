@@ -133,6 +133,9 @@ impl Policy {
     ///
     /// Checks run in a fixed order — length, uppercase, lowercase, digit,
     /// special — so the same password always yields the same error.
+    ///
+    /// # Requirements
+    /// REQ-SLT-004, REQ-SLT-005, REQ-SLT-201
     pub fn check(&self, password: &str) -> Result<(), PolicyError> {
         let len = password.chars().count();
         if len < self.min_length {
@@ -350,5 +353,31 @@ mod tests {
     #[test]
     fn empty_password_scores_zero() {
         assert_eq!(strength("", &[]).score, 0);
+    }
+
+    /// REQ-SLT-201: minimum-length enforcement counts Unicode characters,
+    /// not bytes (12 four-byte chars pass a 12-char policy).
+    #[test]
+    fn policy_length_counts_chars_not_bytes() {
+        let policy = Policy::default()
+            .require_uppercase(false)
+            .require_lowercase(false)
+            .require_digit(false)
+            .require_special(false);
+        // 12 four-byte characters = 48 bytes.
+        let multibyte = "水资源毛巾房间\u{1F600}"
+            .chars()
+            .take(12)
+            .collect::<String>();
+        assert_eq!(multibyte.chars().count(), 12);
+        assert_eq!(multibyte.len(), 48);
+        assert!(policy.check(&multibyte).is_ok());
+
+        // 11 chars fails even at 44 bytes.
+        let short = multibyte.chars().take(11).collect::<String>();
+        assert_eq!(
+            policy.check(&short),
+            Err(PolicyError::TooShort { min: 12, got: 11 })
+        );
     }
 }
