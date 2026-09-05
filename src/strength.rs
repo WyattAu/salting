@@ -356,7 +356,7 @@ mod tests {
     }
 
     /// REQ-SLT-201: minimum-length enforcement counts Unicode characters,
-    /// not bytes (12 four-byte chars pass a 12-char policy).
+    /// not bytes (12 multi-byte chars pass a 12-char policy).
     #[test]
     fn policy_length_counts_chars_not_bytes() {
         let policy = Policy::default()
@@ -364,16 +364,13 @@ mod tests {
             .require_lowercase(false)
             .require_digit(false)
             .require_special(false);
-        // 12 four-byte characters = 48 bytes.
-        let multibyte = "水资源毛巾房间\u{1F600}"
-            .chars()
-            .take(12)
-            .collect::<String>();
+        // 12 three-byte characters = 36 bytes.
+        let multibyte = "水".repeat(12);
         assert_eq!(multibyte.chars().count(), 12);
-        assert_eq!(multibyte.len(), 48);
+        assert_eq!(multibyte.len(), 36);
         assert!(policy.check(&multibyte).is_ok());
 
-        // 11 chars fails even at 44 bytes.
+        // 11 chars fails even at 33 bytes.
         let short = multibyte.chars().take(11).collect::<String>();
         assert_eq!(
             policy.check(&short),
