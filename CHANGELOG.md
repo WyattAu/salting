@@ -5,6 +5,20 @@ Changelog](https://keepachangelog.com/) — versions follow [semver](https://sem
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-05
+
+### Added
+
+- API declared stable; semver contract enforced via cargo-semver-checks CI gate.
+- Argon2id password hashing with OWASP-recommended defaults, configurable
+  tuning knobs, and a low-memory preset.
+- PHC string format output and strict verification
+  (`verify_password_strict`).
+- Optional zxcvbn-based strength checking (`strength` feature) and
+  cargo-fuzz targets.
+- Memory-DoS hardening: PHC cost-parameter clamping at verify with public
+  `MAX_PHC_*` bounds (0.2.1).
+
 ## [0.2.1] - 2026-09-05
 
 ### Security
