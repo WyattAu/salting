@@ -1,3 +1,12 @@
+// Benchmarks run on fixed, known-good inputs; unwrap failures abort the
+// bench run visibly, which is the desired behavior here.
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::panic
+)]
+
 use criterion::{Criterion, criterion_group, criterion_main};
 
 fn bench_hash_password(c: &mut Criterion) {

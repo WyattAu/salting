@@ -28,3 +28,9 @@ proptest = "1"
 default = ["argon2id"]
 argon2id = []
 strength = ["dep:zxcvbn"]
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "warn"
+indexing_slicing = "deny"
+panic = "deny"
