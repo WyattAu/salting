@@ -30,6 +30,8 @@ feature (Policy, zxcvbn estimation).
 | REQ-SLT-104 | Invalid `Argon2Params` (e.g. `output_len` below the 4-byte Argon2 minimum) return `Err(HashFailed)`, never panic | MUST |
 | REQ-SLT-105 | Error `Display` output contains no password material (static messages only) | MUST |
 | REQ-SLT-106 | `strength` never fails: an unanalyzable password yields score 0 with feedback (treated as weak) | SHOULD |
+| REQ-SLT-107 | `verify_password`/`verify_password_strict` reject PHC strings whose embedded cost params exceed the documented bounds (`m` ≤ 65536 KiB = `MAX_PHC_MEMORY_KIB`, `t` ≤ 16 = `MAX_PHC_ITERATIONS`, `p` ≤ 8 = `MAX_PHC_PARALLELISM`) with `Err(ParamsExceeded)` **before any Argon2 allocation** — bounds sit at/above everything this crate hashes with, far below memory-DoS territory | MUST |
+| REQ-SLT-108 | `verify_password`/`verify_password_strict` reject malformed cost-param encodings (non-decimal, negative, leading zeroes, beyond `u32`, empty) and zero-valued `m`/`t`/`p` with `Err(InvalidHashFormat)` before Argon2 sees them — never panic | MUST |
 
 ## Robustness
 
@@ -67,11 +69,13 @@ feature (Policy, zxcvbn estimation).
 | REQ-SLT-104 | `invalid_params_fail_closed` (`src/lib.rs`) — **gap test added** | unit |
 | REQ-SLT-105 | `error_display_contains_no_password_material` (`src/lib.rs`) — **gap test added** | unit |
 | REQ-SLT-106 | `empty_password_scores_zero` (`src/strength.rs`) | unit |
+| REQ-SLT-107 | `default_hash_params_within_bounds` (boundary: defaults accepted), `phc_params_exceeding_bounds_rejected` (incl. 250 ms no-allocation bound), `fuzz_edited_params_are_classified` (`src/lib.rs`) — **gap tests added** | unit/property |
+| REQ-SLT-108 | `phc_zero_params_rejected`, `phc_malformed_params_rejected`, `fuzz_arbitrary_phc_never_panics_or_lingers` (`src/lib.rs`) — **gap tests added** | unit/property |
 | REQ-SLT-200 | `hash_verify_roundtrip` (`src/lib.rs`) | property |
 | REQ-SLT-201 | `policy_length_counts_chars_not_bytes` (`src/strength.rs`) — **gap test added** | unit |
 
 ## Test Count Delta
 
-- Before: 15 tests (6 lib incl. 3 proptests + 9 strength).
-- Added: 4 (`malformed_hash_rejected`, `invalid_params_fail_closed`, `error_display_contains_no_password_material`, `policy_length_counts_chars_not_bytes`).
-- After: 19.
+- Before: 19 tests (6 lib incl. 3 proptests + 9 strength, 4 gap tests from prior sweep).
+- Added: 6 (`default_hash_params_within_bounds`, `phc_params_exceeding_bounds_rejected`, `phc_zero_params_rejected`, `phc_malformed_params_rejected`, proptests `fuzz_arbitrary_phc_never_panics_or_lingers`, `fuzz_edited_params_are_classified`).
+- After: 25.
