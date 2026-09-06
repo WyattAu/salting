@@ -240,6 +240,28 @@ pub fn check_password(
 mod tests {
     use super::*;
 
+    /// Pin every zxcvbn score-bucket boundary (3/6/8/10 on log10 guesses).
+    /// Kills the match-guard mutants in `score_from_guesses_log10`: without
+    /// exact boundary inputs, a flipped guard reroutes a value to an
+    /// adjacent bucket no test observes.
+    #[test]
+    fn score_buckets_pin_all_boundaries() {
+        let cases: &[(f64, u8)] = &[
+            (2.999_999, 0),
+            (3.0, 1), // kills `<` → `<=` at 3.0
+            (5.999_999, 1),
+            (6.0, 2), // kills guard `g < 6.0` → false, and `<` → `==` at 6.0
+            (7.999_999, 2),
+            (8.0, 3), // kills guard `g < 8.0` → false
+            (9.999_999, 3),
+            (10.0, 4), // kills guard `g < 10.0` → true
+            (11.0, 4),
+        ];
+        for &(g, want) in cases {
+            assert_eq!(score_from_guesses_log10(g), want, "guesses_log10={g}");
+        }
+    }
+
     #[test]
     fn policy_checks_are_deterministic_and_ordered() {
         let policy = Policy::default();
