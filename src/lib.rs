@@ -435,7 +435,15 @@ mod tests {
 
     #[test]
     fn low_memory_params() {
+        // Pin the preset values: this is a documented public contract
+        // (64 MiB, 2 iterations, 1 lane) and distinguishes the preset
+        // from `Argon2Params::default()` (3 iterations, 4 lanes).
         let params = Argon2Params::low_memory();
+        assert_eq!(params.memory_kib, 65_536);
+        assert_eq!(params.iterations, 2);
+        assert_eq!(params.parallelism, 1);
+        assert_eq!(params.output_len, 32);
+
         let hash = hash_password_with_params("test", &params).unwrap();
         assert!(verify_password("test", &hash).unwrap());
     }
