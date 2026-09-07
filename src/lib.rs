@@ -563,6 +563,20 @@ mod tests {
         assert!(verify_password_strict("correct horse battery staple", &hash).is_ok());
     }
 
+    /// REQ-SLT-107 companion: PHC parameter identifiers other than
+    /// `m`/`t`/`p` are not cost parameters — the bounds check must ignore
+    /// them, so a hash carrying the PHC-standard `keyid` field (which this
+    /// crate does not interpret) verifies normally.
+    #[test]
+    fn phc_unknown_param_ident_is_ignored_by_bounds_check() {
+        let base = hash_password_with_params("keyid-test", &test_params()).unwrap();
+        let forged = base.replacen("$m=32,", "$keyid=Abcd,m=32,", 1);
+        assert_ne!(forged, base, "keyid insertion did not apply");
+
+        assert!(verify_password("keyid-test", &forged).unwrap());
+        assert!(verify_password_strict("keyid-test", &forged).is_ok());
+    }
+
     /// REQ-SLT-107: PHC cost parameters above the documented bounds are
     /// rejected with `ParamsExceeded` *before* Argon2 allocates. A forged
     /// `m=999999` (≈1 GiB) would otherwise be a memory-DoS primitive when
