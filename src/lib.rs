@@ -45,7 +45,6 @@ pub use strength::{Policy, PolicyError, Strength, check_password, strength};
 use argon2::{Algorithm, Argon2, Params, Version};
 use password_hash::phc::{ParamsString, SaltString, Value};
 use password_hash::{PasswordHasher, PasswordVerifier};
-use rand_core::OsRng;
 
 /// Upper bound on the PHC-embedded memory parameter (`m`, in KiB) accepted
 /// by [`verify_password`] and [`verify_password_strict`]: 64 MiB, exactly
