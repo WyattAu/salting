@@ -42,10 +42,10 @@ pub use error::PasswordError;
 #[cfg(feature = "strength")]
 pub use strength::{Policy, PolicyError, Strength, check_password, strength};
 
-use argon2::password_hash::{
-    ParamsString, PasswordHasher, PasswordVerifier, SaltString, Value, rand_core::OsRng,
-};
 use argon2::{Algorithm, Argon2, Params, Version};
+use password_hash::phc::{ParamsString, SaltString, Value};
+use password_hash::{PasswordHasher, PasswordVerifier};
+use rand_core::OsRng;
 
 /// Upper bound on the PHC-embedded memory parameter (`m`, in KiB) accepted
 /// by [`verify_password`] and [`verify_password_strict`]: 64 MiB, exactly
@@ -183,11 +183,11 @@ pub fn hash_password_with_params(
     password: &str,
     params: &Argon2Params,
 ) -> Result<String, PasswordError> {
-    let salt = SaltString::generate(&mut OsRng);
+    let salt = SaltString::generate();
     let argon2 = params.build_argon2()?;
 
     let hash = argon2
-        .hash_password(password.as_bytes(), &salt)
+        .hash_password_with_salt(password.as_bytes(), salt.as_ref().as_bytes())
         .map_err(|_| PasswordError::HashFailed)?
         .to_string();
 
