@@ -7,6 +7,12 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
+ignore = [
+    # time stack-exhaustion DoS. Transitive via zxcvbn (strength feature).
+    # Patched in time >=0.3.47, which requires rustc 1.88 vs this crate's
+    # MSRV 1.85. Revisit at the next MSRV bump.
+    "RUSTSEC-2026-0009",
+]
 
 [licenses]
 version = 2

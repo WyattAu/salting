@@ -5,6 +5,18 @@ Changelog](https://keepachangelog.com/) — versions follow [semver](https://sem
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-09
+
+### Changed
+- **Breaking:** argon2 0.6 / password-hash 0.6 / phc 0.6 (digest 0.11
+  ecosystem).
+- Vendored dependency surface refreshed (cargo-vet registry audits).
+
+### Tests
+- Cover the PHC unknown-parameter ignore arm (Tier A coverage).
+- Pin all zxcvbn score-bucket boundaries in strength tests.
+
+
 ## [1.0.0] - 2026-09-05
 
 ### Added
