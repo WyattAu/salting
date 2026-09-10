@@ -1,5 +1,9 @@
 # salting
 
+[![docs.rs](https://docs.rs/salting/badge.svg)](https://docs.rs/salting)
+[![crates.io](https://img.shields.io/crates/v/salting.svg)](https://crates.io/crates/salting)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
+
 Opinionated Argon2id password hashing for Rust with OWASP-recommended defaults.
 
 ## Why?
@@ -14,6 +18,13 @@ The [`argon2`](https://crates.io/crates/argon2) crate gives you raw access to th
 - **PHC string format** — hashes are self-describing and portable
 - **Strict verification** — `verify_password_strict()` returns `Err` on mismatch instead of `false`
 - **`#![forbid(unsafe_code)]`** — no unsafe code anywhere
+
+## Feature Flags
+
+| Feature | Default | Description |
+|---|---|---|
+| `argon2id` | ✅ | Argon2id hashing with OWASP-recommended defaults. |
+| `strength` | — | Password strength estimation (zxcvbn) and `Policy` checks via `check_password`. |
 
 ## Quick Start
 

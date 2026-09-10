@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, allow(unused_attributes))]
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
@@ -35,11 +37,13 @@
 mod error;
 
 #[cfg(feature = "strength")]
+#[cfg_attr(docsrs, doc(cfg(feature = "strength")))]
 pub mod strength;
 
 pub use error::PasswordError;
 
 #[cfg(feature = "strength")]
+#[cfg_attr(docsrs, doc(cfg(feature = "strength")))]
 pub use strength::{Policy, PolicyError, Strength, check_password, strength};
 
 use argon2::{Algorithm, Argon2, Params, Version};
