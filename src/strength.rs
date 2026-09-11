@@ -190,6 +190,21 @@ fn score_from_guesses_log10(guesses_log10: f64) -> u8 {
 ///
 /// This function never fails: if the password cannot be analyzed, a
 /// score of 0 with feedback is returned.
+///
+/// # Examples
+///
+/// ```
+/// use salting::strength::strength;
+///
+/// let weak = strength("password", &[]);
+/// assert_eq!(weak.score, 0);
+/// assert!(!weak.feedback.is_empty());
+///
+/// // User-specific inputs (name, product) penalize matching passwords.
+/// let base = strength("crawlkitcrawlkit", &[]);
+/// let penalized = strength("crawlkitcrawlkit", &["crawlkit"]);
+/// assert!(penalized.score < base.score);
+/// ```
 pub fn strength(password: &str, user_inputs: &[&str]) -> Strength {
     match zxcvbn::zxcvbn(password, user_inputs) {
         Ok(estimate) => {
@@ -218,6 +233,26 @@ pub fn strength(password: &str, user_inputs: &[&str]) -> Strength {
 /// for passwords that satisfy the policy. Note that a returned `Ok` does
 /// not mean the password is strong — inspect [`Strength::score`] to decide
 /// (e.g. reject scores ≤ 1).
+///
+/// # Examples
+///
+/// ```
+/// use salting::strength::{check_password, Policy};
+///
+/// // Policy failure short-circuits — no strength estimate.
+/// let err = check_password("short", &Policy::default(), &[]);
+/// assert!(err.is_err());
+///
+/// // Policy-passing passwords get a score + actionable feedback.
+/// let relaxed = Policy::default()
+///     .require_uppercase(false)
+///     .require_lowercase(false)
+///     .require_digit(false)
+///     .require_special(false);
+/// let result = check_password("quartz-limpkin-vortex-blame", &relaxed, &[])
+///     .expect("passes the relaxed policy");
+/// assert!(result.score >= 3, "score = {}", result.score);
+/// ```
 pub fn check_password(
     password: &str,
     policy: &Policy,

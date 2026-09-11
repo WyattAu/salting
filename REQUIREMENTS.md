@@ -33,6 +33,17 @@ feature (Policy, zxcvbn estimation).
 | REQ-SLT-107 | `verify_password`/`verify_password_strict` reject PHC strings whose embedded cost params exceed the documented bounds (`m` ≤ 65536 KiB = `MAX_PHC_MEMORY_KIB`, `t` ≤ 16 = `MAX_PHC_ITERATIONS`, `p` ≤ 8 = `MAX_PHC_PARALLELISM`) with `Err(ParamsExceeded)` **before any Argon2 allocation** — bounds sit at/above everything this crate hashes with, far below memory-DoS territory | MUST |
 | REQ-SLT-108 | `verify_password`/`verify_password_strict` reject malformed cost-param encodings (non-decimal, negative, leading zeroes, beyond `u32`, empty) and zero-valued `m`/`t`/`p` with `Err(InvalidHashFormat)` before Argon2 sees them — never panic | MUST |
 
+## Pepper (Security)
+
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| REQ-SLT-300 | `Pepper::new`/`Pepper::generate` reject empty secrets (`PepperEmpty`) and secrets beyond `MAX_PEPPER_LEN` = 1024 bytes (`PepperTooLong`), fail closed at construction | MUST |
+| REQ-SLT-301 | A peppered hash verifies with the same pepper; a wrong pepper (or wrong password) yields `Ok(false)` — never `Ok(true)`, never a panic; free-function wrappers agree with `Hasher` | MUST |
+| REQ-SLT-302 | Peppered and unpeppered constructions are mutually incompatible (each fails to verify the other); the pepper enters as the Argon2 secret key (`K`, RFC 9106); the PHC string carries no pepper marker; a `Hasher` with no pepper verifies unpeppered hashes (plain mode) | MUST |
+| REQ-SLT-303 | Rotation: `verify` tries the current pepper first, then previous peppers; `needs_rehash` is `true` exactly when the hash verifies but not with the current pepper | MUST |
+| REQ-SLT-304 | Migration: `accept_unpeppered(true)` lets legacy unpeppered hashes verify under a peppered `Hasher` and flags them via `needs_rehash`; the default (`false`) rejects them | MUST |
+| REQ-SLT-305 | `Pepper` storage is `Zeroizing<Vec<u8>>` (wiped on drop; type-level witness pinned by test) and its `Debug` output is redacted | MUST |
+
 ## Robustness
 
 | ID | Requirement | Priority |
@@ -73,9 +84,20 @@ feature (Policy, zxcvbn estimation).
 | REQ-SLT-108 | `phc_zero_params_rejected`, `phc_malformed_params_rejected`, `fuzz_arbitrary_phc_never_panics_or_lingers` (`src/lib.rs`) — **gap tests added** | unit/property |
 | REQ-SLT-200 | `hash_verify_roundtrip` (`src/lib.rs`) | property |
 | REQ-SLT-201 | `policy_length_counts_chars_not_bytes` (`src/strength.rs`) — **gap test added** | unit |
+| REQ-SLT-300 | `pepper_rejects_empty`, `pepper_rejects_too_long` (`src/pepper.rs`) | unit |
+| REQ-SLT-301 | `pepper_roundtrip_and_wrong_pepper_fails`, `pepper_roundtrip_property`, `generate_roundtrip_and_bounds` (`src/pepper.rs`); `peppered_verify_rejects_hostile_hashes` (`tests/pepper.rs`) | unit/property/integration |
+| REQ-SLT-302 | `peppered_and_unpeppered_hashes_are_incompatible` (`src/pepper.rs`); `free_functions_and_hasher_agree` (`tests/pepper.rs`) | unit/integration |
+| REQ-SLT-303 | `pepper_rotation_current_and_previous` (`src/pepper.rs`); `login_flow_with_pepper_rotation` (`tests/pepper.rs`) | unit/integration |
+| REQ-SLT-304 | `migration_from_unpeppered_hashes` (`src/pepper.rs`); `login_flow_migrating_to_pepper` (`tests/pepper.rs`) | unit/integration |
+| REQ-SLT-305 | `pepper_debug_is_redacted`, `pepper_storage_is_zeroizing` (`src/pepper.rs`) | unit |
 
-## Test Count Delta
+## Test Count Delta (1.2.0)
 
-- Before: 19 tests (6 lib incl. 3 proptests + 9 strength, 4 gap tests from prior sweep).
-- Added: 6 (`default_hash_params_within_bounds`, `phc_params_exceeding_bounds_rejected`, `phc_zero_params_rejected`, `phc_malformed_params_rejected`, proptests `fuzz_arbitrary_phc_never_panics_or_lingers`, `fuzz_edited_params_are_classified`).
-- After: 25.
+- Before: 28 lib tests (23 unit + 5 proptests) + 2 doctests, 0 integration
+  tests (default features; plus 10 strength tests + 1 doctest behind the
+  feature flag).
+- Added: 12 pepper unit tests + 1 pepper proptest (`src/pepper.rs`),
+  4 integration tests (`tests/pepper.rs`), 7 doctests (pepper module
+  docs, constructors, Hasher, crate root).
+- After (default features): 41 lib tests + 4 integration tests +
+  9 doctests; `--features strength` adds 10 unit tests + 1 doctest.

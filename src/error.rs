@@ -31,4 +31,27 @@ pub enum PasswordError {
         /// Value found in the hash string.
         got: u32,
     },
+
+    /// A [`Pepper`](crate::Pepper) was constructed from an empty secret.
+    ///
+    /// An empty pepper is indistinguishable from no pepper; hashing with
+    /// one would silently produce unpeppered hashes. Rejected at
+    /// construction so the mistake cannot reach the stored-hash column
+    /// (REQ-SLT-300).
+    #[error("pepper must not be empty")]
+    PepperEmpty,
+
+    /// A [`Pepper`](crate::Pepper) was constructed from a secret longer
+    /// than the documented bound ([`MAX_PEPPER_LEN`](crate::MAX_PEPPER_LEN)).
+    ///
+    /// The bound is generous (1 KiB — practical peppers are 32–64 bytes);
+    /// beyond it a "pepper" is almost certainly a configuration mistake
+    /// (e.g. a JSON blob or a PEM block pasted whole).
+    #[error("pepper too long: got {got} bytes, max {max}")]
+    PepperTooLong {
+        /// Maximum accepted length in bytes ([`MAX_PEPPER_LEN`](crate::MAX_PEPPER_LEN)).
+        max: usize,
+        /// Length of the rejected secret in bytes.
+        got: usize,
+    },
 }

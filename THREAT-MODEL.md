@@ -1,9 +1,10 @@
 # Threat Model — salting
 
-Status: **v1.0** · Method: STRIDE over the public API surface
+Status: **v1.2** · Method: STRIDE over the public API surface
 (`hash_password`, `hash_password_with_params`, `verify_password`,
 `verify_password_strict`, `check_password`/`Policy`/`strength` behind the
-`strength` feature).
+`strength` feature, and the 1.2 pepper surface: `Pepper`, `Hasher`,
+`hash_password_with_pepper`, `verify_password_with_pepper`).
 
 Trust boundaries: (1) the password string (attacker-influenced at login),
 (2) the stored PHC hash string (trusted DB contents — but see OPEN-1),
@@ -28,6 +29,9 @@ Trust boundaries: (1) the password string (attacker-influenced at login),
 | T4 | Policy bypass (weak password accepted) | Elevation | `Policy::check`, `check_password` | Deterministic composition rules run first (fail-fast), then zxcvbn guessability; user inputs reduce score | `src/strength.rs::policy_checks_are_deterministic_and_ordered`, `each_policy_error_variant`, `check_password_fails_fast_on_policy`, `common_password_scores_zero_with_feedback`, `user_inputs_reduce_score`, `empty_password_scores_zero`; `fuzz/fuzz_targets/fuzz_policy.rs` |
 | T5 | Mismatch reported ambiguously | Repudiation | `verify_password` | All verify failures map to `Ok(false)` (no oracle about hash state); `verify_password_strict` distinguishes `VerificationFailed` for callers that care | `src/lib.rs::strict_verify_fails_on_mismatch` |
 | T6 | Memory-DoS via PHC-embedded cost params (`m=4 GiB` hash) | DoS | `verify_password`, `verify_password_strict` | Params validated against bounds (`m` ≤ 65536 KiB, `t` ≤ 16, `p` ≤ 8) **before** any Argon2 allocation: over-bound → `Err(ParamsExceeded)`, zero/malformed → `Err(InvalidHashFormat)`; fail closed since out-of-bounds hashes are not ones this crate produced | `src/lib.rs::phc_params_exceeding_bounds_rejected` (incl. 250 ms no-allocation bound), `phc_zero_params_rejected`, `phc_malformed_params_rejected`, `default_hash_params_within_bounds` (boundary), proptests `fuzz_arbitrary_phc_never_panics_or_lingers`, `fuzz_edited_params_are_classified` |
+| T7 | DB-only exfiltration → offline cracking (A1) | Information Disclosure | stored PHC strings | **Pepper (1.2):** an application-side secret held outside the DB enters every hash as the Argon2 secret key (`K`, RFC 9106); without it, exfiltrated hashes cannot be attacked offline at all. Opt-in: `Pepper` + `Hasher::with_pepper`; storage/rotation guidance in `docs/PEPPER-MANAGEMENT.md`. Does NOT protect against full-server compromise (env/KMS readable) — out of scope below | `src/pepper.rs::pepper_roundtrip_and_wrong_pepper_fails`, `peppered_and_unpeppered_hashes_are_incompatible`; `tests/pepper.rs::login_flow_with_pepper_rotation` |
+| T8 | Pepper mishandling by the integrator (empty secret, oversized config blob, key material in logs) | Elevation | `Pepper::new`, `Pepper::generate`, `Pepper` Debug | Empty secrets rejected (`PepperEmpty` — an empty pepper would silently degrade to unpeppered), > 1 KiB rejected (`PepperTooLong`); `Debug` impl redacted; inner buffer is `Zeroizing` (wiped on drop) | `src/pepper.rs::pepper_rejects_empty`, `pepper_rejects_too_long`, `pepper_debug_is_redacted`, `pepper_storage_is_zeroizing` |
+| T9 | Rotation/migration window abused: unpeppered-forgery swap-in | Spoofing | `Hasher::accept_unpeppered`, `Hasher::with_previous_pepper` | Legacy/unpeppered acceptance is **opt-in** (`accept_unpeppered`, default off) and documented as a migration-window-only switch; a peppered deployment without it never accepts unpeppered hashes, so a DB-write attacker cannot swap in a precomputed unpeppered hash. Pepper versioning rides on `needs_rehash` (rehash-on-login), not on PHC markers (the PHC string carries none — attacker-writable `keyid` is ignored) | `src/pepper.rs::migration_from_unpeppered_hashes`, `needs_rehash_is_false_without_a_current_pepper`; `tests/pepper.rs::login_flow_migrating_to_pepper` |
 
 ## Closed Risks
 
@@ -47,7 +51,10 @@ Trust boundaries: (1) the password string (attacker-influenced at login),
 
 - **OPEN-2 — no rehash-on-login / parameter upgrade helper.** Hashes made
   under old `Argon2Params` are never transparently re-imported at a stronger
-  cost; migration is entirely caller-side.
+  cost; migration is entirely caller-side. *Partially closed in 1.2 for the
+  pepper dimension:* `Hasher::needs_rehash` drives rehash-on-login across
+  pepper rotations and unpeppered→peppered migration; cost-parameter
+  upgrades remain caller-side.
 - **OPEN-3 — `verify_password` collapses corrupt-hash and wrong-password.**
   Operationally convenient, but a silently corrupted hash column is
   indistinguishable from user typos (A3); strict variant exists but is
@@ -63,6 +70,12 @@ Trust boundaries: (1) the password string (attacker-influenced at login),
   `argon2` crate).
 - Username enumeration via timing (hashing cost is constant per params).
 - Caller-side storage of the PHC string (DB hardening).
+- **Full-server compromise:** an attacker who reads the process
+  environment, host filesystem, or the app role's KMS credentials obtains
+  the pepper too (T7). Pepper storage is the operator's responsibility;
+  `docs/PEPPER-MANAGEMENT.md` covers env-var vs. KMS/HSM trade-offs.
+- Pepper entropy chosen by the caller: the crate validates length bounds
+  but cannot certify that a caller-supplied pepper is random or unique.
 
 ## Residual Risks
 
@@ -81,3 +94,12 @@ Trust boundaries: (1) the password string (attacker-influenced at login),
   (≤ 64 MiB, t ≤ 16, p ≤ 8): a hostile in-bounds hash costs at most ~4× a
   default verify. Tag length drives an allocation linear in input size
   (no amplification).
+- **Rotation/migration verify cost:** with `n` candidate peppers
+  configured, a failed login costs up to `n` Argon2 verifies (a small
+  online-DoS multiplier during the migration window; retire previous
+  peppers promptly). Login-shaped flows are rate-limited upstream as
+  usual — this crate provides no rate limiting.
+- **Dormant accounts during pepper rotation** keep verifying against the
+  previous pepper indefinitely until they log in again; operators retire
+  the previous pepper and force resets/expiry per policy (runbook in
+  `docs/PEPPER-MANAGEMENT.md`).

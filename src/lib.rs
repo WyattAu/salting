@@ -33,14 +33,41 @@
 //! # }
 //! # #[cfg(not(feature = "strength"))] fn main() {}
 //! ```
+//!
+//! # Pepper (server-side secret)
+//!
+//! [`Pepper`] mixes an application-wide secret — stored away from the
+//! database — into every hash, protecting passwords when **only** the
+//! database leaks. The pepper enters hashing as the Argon2 secret key
+//! (`K` input, RFC 9106); peppered hashes verify only with that same
+//! pepper. See [`pepper`] for the construction, threat model, and
+//! rotation/migration recipes:
+//!
+//! ```rust
+//! use salting::{hash_password_with_pepper, verify_password_with_pepper, Pepper};
+//!
+//! # fn demo() -> Result<(), salting::PasswordError> {
+//! let pepper = Pepper::new(b"secret from env or KMS")?;
+//! let hash = hash_password_with_pepper("my secret password", &pepper)?;
+//! assert!(verify_password_with_pepper("my secret password", &hash, &pepper)?);
+//! # Ok(())
+//! # }
+//! # demo().unwrap();
+//! ```
 
 mod error;
+
+pub mod pepper;
 
 #[cfg(feature = "strength")]
 #[cfg_attr(docsrs, doc(cfg(feature = "strength")))]
 pub mod strength;
 
 pub use error::PasswordError;
+pub use pepper::{
+    Hasher, MAX_PEPPER_LEN, Pepper, RECOMMENDED_PEPPER_LEN, hash_password_with_pepper,
+    verify_password_with_pepper,
+};
 
 #[cfg(feature = "strength")]
 #[cfg_attr(docsrs, doc(cfg(feature = "strength")))]

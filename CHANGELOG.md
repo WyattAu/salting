@@ -5,6 +5,52 @@ Changelog](https://keepachangelog.com/) — versions follow [semver](https://sem
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-11
+
+### Added
+
+- **Pepper support (REQ-SLT-300..305):** server-side secret mixed into
+  hashing as the **Argon2 secret key input** (`K`, RFC 9106) via
+  `argon2::Argon2::new_with_secret` — the algorithm's native pepper
+  mechanism; no pre-hashing, no new crypto dependencies. Peppered hashes
+  verify only with the same pepper; the PHC string carries no pepper
+  marker (pepper versioning is application-side, recipes in the module
+  docs).
+  - `Pepper`: zeroizing secret wrapper (`zeroize` dep), redacted `Debug`,
+    empty/oversized secrets rejected (`MAX_PEPPER_LEN` = 1 KiB),
+    `Pepper::generate` mints CSPRNG peppers.
+  - `Hasher` builder: OWASP-default or custom `Argon2Params`, current
+    pepper (`with_pepper`), previous peppers (`with_previous_pepper`) for
+    **rotation**, `accept_unpeppered` for **migration** from pre-pepper
+    databases, and `needs_rehash` for **rehash-on-login**.
+  - Free functions `hash_password_with_pepper` /
+    `verify_password_with_pepper` (thin `Hasher` wrappers).
+  - Verify path inherits the PHC cost-parameter bounds check
+    (REQ-SLT-107/108) before any Argon2 allocation.
+- `docs/PEPPER-MANAGEMENT.md`: storage guidance (env var vs. KMS/HSM),
+  AWS KMS / GCP KMS / HashiCorp Vault retrieval examples (app-side code,
+  no new crate deps), and a zero-downtime rotation runbook.
+- `benches/hash_bench.rs`: salting vs. raw `argon2` at equivalent params
+  (wrapper overhead ≈ 0), plus bcrypt (cost 10) and scrypt (N=2¹⁷, r=8,
+  p=1) at OWASP-recommended costs. Bench-only deps are dev-dependencies.
+- README: pepper section (threat model + rotation example) and benchmark
+  table.
+
+### Security
+
+- Pepper threat model documented (crate docs, README, THREAT-MODEL):
+  protects against DB-only exfiltration, NOT full-server compromise.
+
+### Tests
+
+- 12 pepper unit tests + 1 proptest (`src/pepper.rs`) and 4 public-API
+  integration tests (`tests/pepper.rs`): roundtrip, wrong-pepper fails
+  closed, peppered/unpeppered incompatibility, rotation (current +
+  previous), migration (legacy unpeppered verify + rehash flag),
+  zeroize type-level witness, redacted `Debug`, hostile-hash hardening
+  through the peppered verify path.
+
+
 ## [1.1.0] - 2026-09-09
 
 ### Changed
