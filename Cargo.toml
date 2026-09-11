@@ -13,7 +13,6 @@ exclude = ["/target"]
 [dependencies]
 argon2 = { version = "0.6", features = ["password-hash"] }
 password-hash = { version = "0.6", features = ["rand_core"] }
-rand_core = { version = "0.9", features = ["os_rng"] }
 thiserror = "2"
 zxcvbn = { version = "2", optional = true }
 
