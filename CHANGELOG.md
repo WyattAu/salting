@@ -5,6 +5,19 @@ Changelog](https://keepachangelog.com/) — versions follow [semver](https://sem
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-12
+
+### Added
+
+- **Claims proof-back** ([CLAIMS.md](CLAIMS.md)): every performance claim
+  in the README mapped to its proof artifact.
+- `benches/iai_hot_path.rs` — iai-callgrind instruction gate proving the
+  "wrapper overhead ≈ 0" claim against a raw-`argon2` baseline on
+  identical inputs: wrapper cost is **+839 instructions per hash
+  (+0.2 %)** and **+1 986 per verify (+0.5 %)** at small parameters — a
+  vanishing fraction of a production 64 MiB hash (CI-gated; needs
+  valgrind to run locally).
+
 ## [1.2.0] - 2026-09-11
 
 ### Added

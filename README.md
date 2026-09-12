@@ -133,6 +133,14 @@ a like-for-like security claim. Bench-only dependencies (`bcrypt`,
 `scrypt`, `criterion`) are dev-dependencies and never ship with your
 build.
 
+The overhead claim is also pinned at instruction level: an
+iai-callgrind gate (`cargo bench --bench iai_hot_path`, valgrind required)
+measures wrapper vs raw `argon2` on identical inputs — the wrapper's
+entire cost is **+839 instructions per hash (+0.2 %)** and **+1 986 per
+verify (+0.5 %)** at small parameters, an even smaller fraction of a
+production (64 MiB) hash. See [CLAIMS.md](CLAIMS.md) for the full
+claims-to-proof inventory.
+
 ## Comparison with Raw `argon2`
 
 | Feature | `salting` | `argon2` |
