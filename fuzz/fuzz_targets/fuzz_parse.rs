@@ -44,4 +44,15 @@ fuzz_target!(|data: &[u8]| {
     // Malformed or adversarial hash strings must return Err, never panic.
     let _ = salting::verify_password(&password, &hash);
     let _ = salting::verify_password_strict(&password, &hash);
+
+    // Peppered verify and rehash-decision paths parse the same adversarial
+    // PHC strings (params extraction, pepper-prefix detection) — the
+    // fuzz-derived pepper is validated by Pepper::new and may Err, which is
+    // fine; a panic is not.
+    if let Ok(pepper) = salting::Pepper::new(data.to_vec()) {
+        let _ = salting::verify_password_with_pepper(&password, &hash, &pepper);
+        let hasher = salting::Hasher::new().with_pepper(pepper);
+        let _ = hasher.verify(&password, &hash);
+        let _ = hasher.needs_rehash(&password, &hash);
+    }
 });

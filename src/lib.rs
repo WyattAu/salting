@@ -20,8 +20,8 @@
 //! # Password strength (feature flag)
 //!
 //! With the optional `strength` feature, the crate also provides
-//! deterministic [`Policy`] checks and zxcvbn-based [`mod@strength`]
-//! estimation via [`check_password`]:
+//! deterministic `Policy` checks and zxcvbn-based `strength`-module
+//! estimation via `check_password`:
 //!
 //! ```rust
 //! # #[cfg(feature = "strength")]
