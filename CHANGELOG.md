@@ -5,6 +5,16 @@ Changelog](https://keepachangelog.com/) — versions follow [semver](https://sem
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-16
+
+### Changed
+- **BREAKING (fixed cut):** `PasswordError` gained the `PepperEmpty` and
+  `PepperTooLong` variants when pepper support shipped in 1.2.0. The
+  enum is exhaustive, so adding variants is a major-level break that
+  semver-checks flags against the v1.1.0 baseline — 1.2.x was an
+  incorrect cut. This release re-cuts the major so downstream `match`
+  arms over `PasswordError` are versioned correctly.
+
 ## [1.2.2] - 2026-09-12
 
 ### Added

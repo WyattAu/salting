@@ -1,0 +1,26 @@
+# cargo-mutants configuration.
+# Config only — do NOT run in CI (too slow for routine verification).
+#
+# Baseline (2026-09-16, --all-features): 90 mutants, 80 caught,
+# 6 timeouts (also killed), 4 unviable, 0 missed = 100% kill score
+# (80/80 killable; 86/90 killed including timeout kills).
+#
+# The 6 timeouts are mutants that push Argon2 down pathological cost
+# paths (e.g. cost-bound checks removed -> tests run default 64 MiB x 3
+# params to completion) — killed by the 4x test-timeout multiplier in
+# ~108 s each, not by an assertion. The 4 unviable are non-instantiable
+# enum/error variants.
+#
+# Tests use the crate's tiny test profile (32 KiB, 1 iteration — see
+# `test_params()` in src/lib.rs), so argon2 functions do NOT need to be
+# excluded from mutation; a full run is ~20 min sequential.
+#
+# New test added during this baseline: `generate_boundary_max_len_is_
+# accepted` (src/pepper.rs) — exactly MAX_PEPPER_LEN must be accepted,
+# killing the `>` -> `>=` boundary mutant in Pepper::generate.
+#
+# Reproduce:
+#   CARGO_TARGET_DIR=/var/tmp/target-mutants-salting \
+#     cargo mutants --in-place --no-shuffle --all-features
+timeout_multiplier = 4.0
+exclude_globs = ["tests/*", "benches/*"]
