@@ -15,7 +15,7 @@ argon2 = { version = "0.6", features = ["password-hash"] }
 password-hash = { version = "0.6", features = ["rand_core"] }
 thiserror = "2"
 zeroize = "1"
-zxcvbn = { version = "2", optional = true }
+zxcvbn = { version = "3", optional = true }
 
 [[bench]]
 name = "salting_bench"
