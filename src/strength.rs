@@ -206,24 +206,17 @@ fn score_from_guesses_log10(guesses_log10: f64) -> u8 {
 /// assert!(penalized.score < base.score);
 /// ```
 pub fn strength(password: &str, user_inputs: &[&str]) -> Strength {
-    match zxcvbn::zxcvbn(password, user_inputs) {
-        Ok(estimate) => {
-            let mut feedback = Vec::new();
-            if let Some(fb) = estimate.feedback().as_ref() {
-                if let Some(warning) = fb.warning() {
-                    feedback.push(warning.to_string());
-                }
-                feedback.extend(fb.suggestions().iter().map(|s| s.to_string()));
-            }
-            Strength {
-                score: score_from_guesses_log10(estimate.guesses_log10()),
-                feedback,
-            }
+    let estimate = zxcvbn::zxcvbn(password, user_inputs);
+    let mut feedback = Vec::new();
+    if let Some(fb) = estimate.feedback().as_ref() {
+        if let Some(warning) = fb.warning() {
+            feedback.push(warning.to_string());
         }
-        Err(_) => Strength {
-            score: 0,
-            feedback: vec!["password could not be analyzed and is treated as weak".to_string()],
-        },
+        feedback.extend(fb.suggestions().iter().map(|s| s.to_string()));
+    }
+    Strength {
+        score: score_from_guesses_log10(estimate.guesses_log10()),
+        feedback,
     }
 }
 
