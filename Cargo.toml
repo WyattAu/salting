@@ -33,7 +33,7 @@ harness = false
 
 [dev-dependencies]
 bcrypt = "0.19"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 proptest = "1"
 scrypt = "0.11"
 # Deterministic CI perf gate (instruction counts; needs valgrind to run).
