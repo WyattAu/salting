@@ -5,6 +5,38 @@ Changelog](https://keepachangelog.com/) — versions follow [semver](https://sem
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-16
+
+### Changed
+- **BREAKING (fixed cut):** `PasswordError` gained the `PepperEmpty` and
+  `PepperTooLong` variants when pepper support shipped in 1.2.0. The
+  enum is exhaustive, so adding variants is a major-level break that
+  semver-checks flags against the v1.1.0 baseline — 1.2.x was an
+  incorrect cut. This release re-cuts the major so downstream `match`
+  arms over `PasswordError` are versioned correctly.
+
+## [1.2.2] - 2026-09-12
+
+### Added
+- `tests/config_matrix.rs`: every public config knob behavior-proven —
+  all four `Argon2Params` fields (memory/iterations/parallelism/output
+  length read back out of the PHC string), all four `Hasher` builders
+  (`with_params`, `with_pepper`, `with_previous_pepper`,
+  `accept_unpeppered`), `needs_rehash` (true exactly for
+  previous-pepper and accepted-legacy hashes, false for current-pepper
+  hashes and failed logins), cost-parameter verification bounds, pepper
+  length bounds, and all six `Policy` knobs (feature `strength`).
+  Dead-knob sweep found zero dead knobs. Fast/deterministic: no sleeps,
+  cheap test params throughout.
+
+### Fixed
+- `tests/config_matrix.rs` PHC segment helper was off by one (read the
+  salt segment as the cost segment); corrected to
+  `["", "argon2id", "v=19", <cost>, <salt>, <hash>]`.
+- Crate docs linked `Policy`/`strength`/`check_password` unconditionally
+  although they exist only with the `strength` feature; reworded so
+  `cargo doc --no-deps` is warning-free with default features.
+
 ## [1.2.1] - 2026-09-12
 
 ### Added
