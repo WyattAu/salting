@@ -153,6 +153,16 @@ claims-to-proof inventory.
 | Strict verify | ✅ | ❌ |
 | `forbid(unsafe_code)` | ✅ | ❌ |
 
+## Mutation testing
+
+`cargo mutants` (config in [`.cargo/mutants.toml`](.cargo/mutants.toml), not run in CI):
+
+- **2026-09-16 baseline: 90 mutants, 80 caught, 6 timeout-killed, 4 unviable, 0 missed = 100% kill score on killable mutants.**
+- Scope: all `src/` modules (`lib.rs`, `pepper.rs`, `strength.rs`, `error.rs`); `tests/` and `benches/` excluded from mutation.
+- Argon2 functions are **not** excluded: tests use the crate's tiny test profile (`test_params()`: 32 KiB, 1 iteration), keeping the full run at ~20 minutes. Mutants that force pathological Argon2 costs die on the 4x test timeout instead.
+- New test added during this baseline: `generate_boundary_max_len_is_accepted` — exactly `MAX_PEPPER_LEN` must be accepted, one byte more rejected.
+- Reproduce: `CARGO_TARGET_DIR=/var/tmp/target-mutants-salting cargo mutants --in-place --no-shuffle --all-features`.
+
 ## License
 
 MIT OR Apache-2.0

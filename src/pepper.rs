@@ -892,6 +892,21 @@ mod tests {
         );
     }
 
+    /// REQ-SLT-301 boundary: exactly `MAX_PEPPER_LEN` bytes must be
+    /// *accepted* (`>` guard, not `>=`), and one byte more must be
+    /// rejected.
+    #[test]
+    fn generate_boundary_max_len_is_accepted() {
+        let pepper = Pepper::generate(MAX_PEPPER_LEN)
+            .expect("generate at exactly MAX_PEPPER_LEN must succeed");
+        assert_eq!(pepper.as_bytes().len(), MAX_PEPPER_LEN);
+
+        assert!(matches!(
+            Pepper::generate(MAX_PEPPER_LEN + 1),
+            Err(PasswordError::PepperTooLong { .. })
+        ));
+    }
+
     /// REQ-SLT-301 (property): arbitrary Unicode passwords roundtrip under
     /// a pepper, and fresh salts still make every hash unique.
     use proptest::prelude::*;
