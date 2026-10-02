@@ -35,7 +35,7 @@ harness = false
 bcrypt = "0.19"
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1"
-scrypt = "0.11"
+scrypt = "0.12"
 # Deterministic CI perf gate (instruction counts; needs valgrind to run).
 iai-callgrind = "0.16"
 

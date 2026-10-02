@@ -86,7 +86,7 @@ fn bench_bcrypt(c: &mut Criterion) {
 
 /// OWASP-recommended scrypt cost: N=2^17, r=8, p=1.
 fn bench_scrypt(c: &mut Criterion) {
-    let params = scrypt::Params::new(17, 8, 1, 32).unwrap();
+    let params = scrypt::Params::new(17, 8, 1).unwrap();
     let salt = [0x42u8; 16]; // bench-only fixed salt
     let mut out = [0u8; 32];
 
